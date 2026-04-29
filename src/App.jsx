@@ -366,20 +366,21 @@ function buildPbMap(records) {
 // ── STYLES ───────────────────────────────────────────────────────────────────
 const S = {
   card: {
-    background: "#111",
-    border: "1px solid #1E1E1E",
-    borderRadius: 10,
+    background: "linear-gradient(180deg, #151a2c 0%, #101523 100%)",
+    border: "1px solid #222a40",
+    borderRadius: 16,
     padding: 18,
     marginBottom: 16,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.28)",
   },
   input: {
-    background: "#181818",
-    border: "1px solid #2A2A2A",
-    borderRadius: 6,
+    background: "#121a2c",
+    border: "1px solid #2a3652",
+    borderRadius: 12,
     color: "#F0F0F0",
-    padding: "10px 12px",
+    padding: "13px 14px",
     fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 12,
+    fontSize: 14,
     width: "100%",
     boxSizing: "border-box",
     outline: "none",
@@ -393,23 +394,25 @@ const S = {
     display: "block",
   },
   btnPrimary: {
-    background: "#C8FF00",
-    color: "#000",
+    background: "linear-gradient(135deg, #b48cff, #7f71ff)",
+    color: "#fff",
     border: "none",
-    padding: "11px 18px",
-    borderRadius: 6,
+    minHeight: 48,
+    padding: "12px 20px",
+    borderRadius: 12,
     cursor: "pointer",
     fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "bold",
     letterSpacing: 1,
   },
   btnOutline: {
     background: "transparent",
-    color: "#C8FF00",
-    border: "1px solid #C8FF00",
-    padding: "10px 16px",
-    borderRadius: 6,
+    color: "#c4ccff",
+    border: "1px solid #586794",
+    minHeight: 48,
+    padding: "12px 16px",
+    borderRadius: 12,
     cursor: "pointer",
     fontFamily: "'JetBrains Mono', monospace",
     fontSize: 11,
@@ -418,8 +421,8 @@ const S = {
   },
   sectionTitle: {
     fontFamily: "'Bebas Neue', sans-serif",
-    fontSize: 25,
-    color: "#C8FF00",
+    fontSize: 30,
+    color: "#d7deff",
     letterSpacing: 3,
     marginBottom: 18,
   },
@@ -531,7 +534,7 @@ function CopyBtn({ text, label, copied, onCopy, children }) {
       onClick={() => onCopy(text, label)}
       style={{
         ...S.btnOutline,
-        ...(active ? { background: "#1a2200", color: "#C8FF00" } : {}),
+        ...(active ? { background: "#212d4b", color: "#f5f7ff", borderColor: "#8598d3" } : {}),
       }}
     >
       {active ? "✅ COPIED" : children || "📋 COPY"}
@@ -1335,6 +1338,7 @@ export default function App() {
   const [pbAlerts, setPbAlerts] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const importRef = useRef(null);
+  const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
     setIntakeSessions(readStore(STORE_KEYS.intake, []));
@@ -1347,9 +1351,21 @@ export default function App() {
     const ok = await copyText(text);
     if (ok) {
       setCopied(label);
+      setCopyStatus("Copied full day.");
       setTimeout(() => setCopied(""), 2200);
+      setTimeout(() => setCopyStatus(""), 2200);
+    } else {
+      window.prompt("Copy manually:", text);
     }
   };
+
+  const buildFullDayText = (date) => {
+    const intake = intakeSessions.filter((s) => s.date === date).at(-1) || {};
+    const post = postSessions.filter((s) => s.date === date).at(-1) || {};
+    return fmtMemory(intake, post, date || dateOnly());
+  };
+
+  const copyTodayFullDay = () => handleCopy(buildFullDayText(dateOnly()), "full-day");
 
   const saveIntake = (record) => {
     const updated = [...intakeSessions, record];
@@ -1447,13 +1463,13 @@ export default function App() {
   };
 
   const tabs = [
-    { id: "intake", label: "⚡ INTAKE" },
-    { id: "post", label: "📊 POST-WO" },
-    { id: "memory", label: "📋 MEMORY" },
-    { id: "baselines", label: "🎯 BASELINES" },
-    { id: "progress", label: "📈 PROGRESS" },
-    { id: "weekly", label: "📅 WEEKLY" },
-    { id: "history", label: "🗂 HISTORY" },
+    { id: "intake", label: "Today" },
+    { id: "post", label: "Log" },
+    { id: "progress", label: "Trends" },
+    { id: "history", label: "History" },
+    { id: "memory", label: "Report" },
+    { id: "baselines", label: "Baselines" },
+    { id: "weekly", label: "Weekly" },
   ];
 
   if (!loaded) {
@@ -1469,7 +1485,8 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;700&display=swap');
         * { box-sizing: border-box; }
-        body { margin: 0; background: #080808; }
+        body { margin: 0; background: #070b14; overflow-x: hidden; }
+        #root { overflow-x: hidden; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0A0A0A; }
         ::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 999px; }
@@ -1477,16 +1494,23 @@ export default function App() {
         input[type="number"]::-webkit-outer-spin-button { opacity: 0.4; }
         select option { background: #1E1E1E; color: #F0F0F0; }
         button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-          outline: 2px solid #C8FF00;
+          outline: 2px solid #b99aff;
           outline-offset: 2px;
         }
+        .field-stack { display: grid; gap: 14px; }
+        .section-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .desktop-nav { display: none; }
+        .mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(13,19,33,0.95); border-top: 1px solid #2a3652; display: grid; grid-template-columns: repeat(5, 1fr); z-index: 50; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); gap: 6px; backdrop-filter: blur(8px);}
+        .mobile-nav button { min-height: 48px; border-radius: 12px; border: 1px solid #2a3652; background: #101828; color: #a9b8d8; font-size: 11px; font-weight: 700; }
+        .mobile-nav button.active { background: #b48cff; color: #fff; border-color: #b48cff; }
+        @media (min-width: 900px){ .desktop-nav{display:block;} .mobile-nav{display:none;} .section-grid{grid-template-columns: repeat(2,minmax(0,1fr));} }
       `}</style>
 
-      <div style={{ background: "#080808", minHeight: "100vh", color: "#F0F0F0", fontFamily: "'JetBrains Mono', monospace" }}>
-        <header style={{ background: "#0D0D0D", borderBottom: "2px solid #C8FF00", padding: "14px 20px" }}>
+      <div style={{ background: "#070b14", minHeight: "100vh", color: "#F0F0F0", fontFamily: "'JetBrains Mono', monospace" }}>
+        <header style={{ background: "#0d1321", borderBottom: "1px solid #2a3652", padding: "14px 16px" }}>
           <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
             <div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 30, color: "#C8FF00", letterSpacing: 4, lineHeight: 1 }}>SPRINT LAB</div>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 30, color: "#d8deff", letterSpacing: 4, lineHeight: 1 }}>SPRINT LAB</div>
               <div style={{ fontSize: 9, color: "#666", letterSpacing: 2.5, marginTop: 2 }}>PERFORMANCE TRACKING SYSTEM</div>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -1512,7 +1536,7 @@ export default function App() {
           </div>
         )}
 
-        <nav style={{ borderBottom: "1px solid #1A1A1A", overflowX: "auto", background: "#0A0A0A" }}>
+        <nav className="desktop-nav" style={{ borderBottom: "1px solid #1A1A1A", overflowX: "auto", background: "#0A0A0A" }}>
           <div style={{ maxWidth: 960, margin: "0 auto", display: "flex" }}>
             {tabs.map((item) => (
               <button
@@ -1520,9 +1544,9 @@ export default function App() {
                 type="button"
                 onClick={() => setTab(item.id)}
                 style={{
-                  padding: "12px 15px",
-                  background: tab === item.id ? "#C8FF00" : "transparent",
-                  color: tab === item.id ? "#000" : "#777",
+                  padding: "14px 16px",
+                  background: tab === item.id ? "#b48cff" : "transparent",
+                  color: tab === item.id ? "#fff" : "#9aa8c4",
                   border: "none",
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 10,
@@ -1538,8 +1562,11 @@ export default function App() {
           </div>
         </nav>
 
-        <main style={{ padding: "20px", maxWidth: 960, margin: "0 auto", paddingBottom: 70 }}>
+        <main style={{ padding: "16px", maxWidth: 960, margin: "0 auto", paddingBottom: "140px" }}>
           <div style={{ ...S.card, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <button type="button" onClick={copyTodayFullDay} style={{ ...S.btnPrimary, minWidth: 180 }}>
+              {copied === "full-day" ? "✅ COPIED FULL DAY" : "📋 COPY FULL DAY"}
+            </button>
             <button type="button" onClick={exportData} style={S.btnPrimary}>
               EXPORT BACKUP
             </button>
@@ -1551,6 +1578,7 @@ export default function App() {
             </button>
             <input ref={importRef} type="file" accept="application/json" onChange={importData} style={{ display: "none" }} />
           </div>
+          {copyStatus && <div style={{ color: "#b8c6f5", marginBottom: 12, fontSize: 12 }}>{copyStatus}</div>}
 
           {tab === "intake" && <IntakeTab sessions={intakeSessions} onSave={saveIntake} onCopy={handleCopy} copied={copied} />}
           {tab === "post" && <PostWorkoutTab sessions={postSessions} onSave={savePost} onCopy={handleCopy} copied={copied} />}
@@ -1560,6 +1588,13 @@ export default function App() {
           {tab === "weekly" && <WeeklyTab intakeSessions={intakeSessions} postSessions={postSessions} onCopy={handleCopy} copied={copied} />}
           {tab === "history" && <HistoryTab intakeSessions={intakeSessions} postSessions={postSessions} baselineRecords={baselineRecords} onDelete={deleteRecord} />}
         </main>
+        <nav className="mobile-nav" aria-label="Primary">
+          {tabs.slice(0, 5).map((item) => (
+            <button key={item.id} type="button" className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </nav>
       </div>
     </>
   );
